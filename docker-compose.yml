@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: spam_postgres
+    environment:
+      POSTGRES_DB: spam_db
+      POSTGRES_USER: spam_user
+      POSTGRES_PASSWORD: spam_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - spam_network
+    restart: unless-stopped
+
+  ml-api:
+    build: .
+    container_name: spam_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: spam_db
+      DB_USER: spam_user
+      DB_PASSWORD: spam_password
+    volumes:
+      - ./models:/app/models
+    networks:
+      - spam_network
+    restart: unless-stopped
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000 --reload
+
+networks:
+  spam_network:
+
+volumes:
+  postgres_data:
